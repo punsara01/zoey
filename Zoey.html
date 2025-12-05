@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZOEY - Your AI Companion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 800px;
+            height: 90vh;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .status {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-size: 11px;
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-dot.online {
+            background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.offline {
+            background: #f87171;
+        }
+
+        .status-dot.checking {
+            background: #fbbf24;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .message.user .avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message.zoey .avatar {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 18px;
+            border-radius: 18px;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.zoey .message-content {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .message-meta {
+            font-size: 10px;
+            color: #999;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .mode-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        .mode-cloud {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .mode-local {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #userInput {
+            flex: 1;
+            padding: 12px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        #userInput:focus {
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #sendBtn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        #sendBtn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        #voiceBtn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        #voiceBtn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
+        }
+
+        #voiceBtn.listening {
+            animation: pulseButton 1s infinite;
+        }
+
+        @keyframes pulseButton {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 20px;
+        }
+
+        .typing-indicator.active {
+            display: flex;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .welcome-message h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .settings {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .settings:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+            color: #c00;
+            font-size: 14px;
+        }
+
+        .info-banner {
+            background: #e0f2fe;
+            border: 1px solid #7dd3fc;
+            padding: 12px;
+            border-radius: 10px;
+            margin: 10px 0;
+            color: #0c4a6e;
+            font-size: 13px;
+        }
+
+        .setup-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .setup-modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-content label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .modal-content button {
+            margin-top: 20px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="settings" onclick="showSettings()">⚙️ Settings</div>
+            <div class="status">
+                <div class="status-row">
+                    <div class="status-dot checking" id="cloudStatus"></div>
+                    <span id="cloudText">Cloud: Checking...</span>
+                </div>
+                <div class="status-row">
+                    <div class="status-dot checking" id="localStatus"></div>
+                    <span id="localText">Local: Checking...</span>
+                </div>
+            </div>
+            <h1>ZOEY</h1>
+            <p>Smart Cloud + Local AI Companion</p>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-message">
+                <h2>👋 Hi! I'm ZOEY</h2>
+                <p>I automatically use the fastest AI available:</p>
+                <p style="margin-top: 10px;">
+                    ☁️ <strong>Oracle Cloud</strong> when online (FAST!)<br>
+                    💻 <strong>Local PC</strong> when offline (PRIVATE!)
+                </p>
+                <p style="margin-top: 15px; font-size: 14px;">💬 Type a message or 🎤 click the microphone!</p>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="avatar" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">Z</div>
+            <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <button id="voiceBtn" onclick="toggleVoice()" title="Voice Input">🎤</button>
+            <input 
+                type="text" 
+                id="userInput" 
+                placeholder="Type your message to ZOEY..." 
+                onkeypress="handleKeyPress(event)"
+            >
+            <button id="sendBtn" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <!-- Setup Modal -->
+    <div class="setup-modal" id="setupModal">
+        <div class="modal-content">
+            <h2>⚙️ Configure ZOEY</h2>
+            <p style="color: #666; margin-bottom: 20px;">Set up your cloud and local AI endpoints</p>
+            
+            <label>☁️ Oracle Cloud URL (Optional)</label>
+            <input type="text" id="cloudUrl" placeholder="http://your-oracle-ip:11434">
+            <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                Leave empty to use local only. Get Oracle IP after setup.
+            </p>
+
+            <label>💻 Local Ollama URL</label>
+            <input type="text" id="localUrl" value="http://localhost:11434">
+            
+            <label>🧠 AI Model</label>
+            <input type="text" id="modelName" value="phi3:mini">
+            <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                On Oracle Cloud with 24GB RAM, try: llama3.2:3b or mistral
+            </p>
+
+            <button onclick="saveConfig()">Save & Connect</button>
+            <button onclick="closeSetup()" style="background: #94a3b8; margin-top: 10px;">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        let config = {
+            cloudUrl: '',
+            localUrl: 'http://localhost:11434',
+            modelName: 'phi3:mini',
+            preferCloud: true
+        };
+
+        let conversationHistory = [];
+        let isListening = false;
+        let recognition = null;
+        let synthesis = window.speechSynthesis;
+        let cloudAvailable = false;
+        let localAvailable = false;
+        let currentMode = 'unknown';
+
+        // Load configuration
+        function loadConfig() {
+            const saved = localStorage.getItem('zoey_config');
+            if (saved) {
+                config = JSON.parse(saved);
+            }
+            
+            if (!config.cloudUrl) {
+                // Show setup modal on first run
+                setTimeout(() => {
+                    document.getElementById('setupModal').classList.add('active');
+                }, 1000);
+            }
+        }
+
+        // Save configuration
+        function saveConfig() {
+            config.cloudUrl = document.getElementById('cloudUrl').value.trim();
+            config.localUrl = document.getElementById('localUrl').value.trim();
+            config.modelName = document.getElementById('modelName').value.trim();
+            
+            localStorage.setItem('zoey_config', JSON.stringify(config));
+            closeSetup();
+            checkConnections();
+        }
+
+        // Close setup modal
+        function closeSetup() {
+            document.getElementById('setupModal').classList.remove('active');
+        }
+
+        // Check both cloud and local connections
+        async function checkConnections() {
+            // Check cloud
+            if (config.cloudUrl) {
+                try {
+                    const response = await fetch(`${config.cloudUrl}/api/tags`, { 
+                        signal: AbortSignal.timeout(3000) 
+                    });
+                    cloudAvailable = response.ok;
+                } catch (error) {
+                    cloudAvailable = false;
+                }
+            }
+
+            // Check local
+            try {
+                const response = await fetch(`${config.localUrl}/api/tags`, { 
+                    signal: AbortSignal.timeout(3000) 
+                });
+                localAvailable = response.ok;
+            } catch (error) {
+                localAvailable = false;
+            }
+
+            updateStatusDisplay();
+        }
+
+        // Update status indicators
+        function updateStatusDisplay() {
+            const cloudStatus = document.getElementById('cloudStatus');
+            const localStatus = document.getElementById('localStatus');
+            const cloudText = document.getElementById('cloudText');
+            const localText = document.getElementById('localText');
+
+            // Update cloud status
+            if (config.cloudUrl) {
+                cloudStatus.className = `status-dot ${cloudAvailable ? 'online' : 'offline'}`;
+                cloudText.textContent = `Cloud: ${cloudAvailable ? 'Online ⚡' : 'Offline'}`;
+            } else {
+                cloudStatus.className = 'status-dot offline';
+                cloudText.textContent = 'Cloud: Not configured';
+            }
+
+            // Update local status
+            localStatus.className = `status-dot ${localAvailable ? 'online' : 'offline'}`;
+            localText.textContent = `Local: ${localAvailable ? 'Online 💻' : 'Offline'}`;
+
+            // Show warning if both offline
+            if (!cloudAvailable && !localAvailable) {
+                const chatContainer = document.getElementById('chatContainer');
+                const existingError = chatContainer.querySelector('.error');
+                if (!existingError) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error';
+                    errorDiv.innerHTML = `
+                        <strong>⚠️ No AI Connection Available!</strong><br><br>
+                        <strong>To use Cloud:</strong> Set up Oracle Cloud and add URL in Settings<br>
+                        <strong>To use Local:</strong> Run "ollama serve" in CMD<br><br>
+                        <button onclick="showSettings()" style="padding: 8px 16px; margin-top: 10px;">Open Settings</button>
+                    `;
+                    chatContainer.appendChild(errorDiv);
+                }
+            }
+        }
+
+        // Get best available endpoint
+        function getBestEndpoint() {
+            if (config.preferCloud && cloudAvailable) {
+                currentMode = 'cloud';
+                return config.cloudUrl;
+            } else if (localAvailable) {
+                currentMode = 'local';
+                return config.localUrl;
+            } else if (cloudAvailable) {
+                currentMode = 'cloud';
+                return config.cloudUrl;
+            }
+            currentMode = 'none';
+            return null;
+        }
+
+        // Initialize speech recognition
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('userInput').value = transcript;
+                sendMessage();
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                isListening = false;
+                document.getElementById('voiceBtn').classList.remove('listening');
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                document.getElementById('voiceBtn').classList.remove('listening');
+            };
+        }
+
+        // Load conversation history
+        function loadHistory() {
+            const saved = localStorage.getItem('zoey_history');
+            if (saved) {
+                conversationHistory = JSON.parse(saved);
+                conversationHistory.forEach(msg => {
+                    if (msg.role === 'user') {
+                        addMessageToChat('user', msg.content, msg.mode);
+                    } else {
+                        addMessageToChat('zoey', msg.content, msg.mode, false);
+                    }
+                });
+            }
+        }
+
+        // Save conversation history
+        function saveHistory() {
+            localStorage.setItem('zoey_history', JSON.stringify(conversationHistory));
+        }
+
+        // Toggle voice input
+        function toggleVoice() {
+            if (!recognition) {
+                alert('Voice input is not supported in your browser. Please use Chrome or Edge.');
+                return;
+            }
+
+            if (isListening) {
+                recognition.stop();
+                isListening = false;
+                document.getElementById('voiceBtn').classList.remove('listening');
+            } else {
+                recognition.start();
+                isListening = true;
+                document.getElementById('voiceBtn').classList.add('listening');
+            }
+        }
+
+        // Speak text
+        function speak(text) {
+            if (synthesis.speaking) {
+                synthesis.cancel();
+            }
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            utterance.pitch = 1.1;
+            utterance.volume = 1;
+            
+            const voices = synthesis.getVoices();
+            const femaleVoice = voices.find(voice => 
+                voice.name.includes('Female') || 
+                voice.name.includes('Zira') || 
+                voice.name.includes('Samantha')
+            );
+            if (femaleVoice) {
+                utterance.voice = femaleVoice;
+            }
+
+            synthesis.speak(utterance);
+        }
+
+        // Handle Enter key
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // Add message to chat
+        function addMessageToChat(sender, message, mode, speak_it = true) {
+            const chatContainer = document.getElementById('chatContainer');
+            const welcomeMsg = chatContainer.querySelector('.welcome-message');
+            if (welcomeMsg) {
+                welcomeMsg.remove();
+            }
+
+            // Remove any error messages
+            const errorMsg = chatContainer.querySelector('.error');
+            if (errorMsg && sender === 'zoey') {
+                errorMsg.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.textContent = sender === 'user' ? 'Y' : 'Z';
+            
+            const contentWrapper = document.createElement('div');
+            contentWrapper.style.maxWidth = '70%';
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            content.textContent = message;
+            
+            contentWrapper.appendChild(content);
+            
+            if (sender === 'zoey' && mode) {
+                const meta = document.createElement('div');
+                meta.className = 'message-meta';
+                
+                const badge = document.createElement('span');
+                badge.className = `mode-badge mode-${mode}`;
+                badge.textContent = mode === 'cloud' ? '☁️ Cloud' : '💻 Local';
+                
+                meta.appendChild(badge);
+                meta.appendChild(document.createTextNode(` • ${new Date().toLocaleTimeString()}`));
+                contentWrapper.appendChild(meta);
+            }
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentWrapper);
+            chatContainer.appendChild(messageDiv);
+            
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            if (sender === 'zoey' && speak_it) {
+                speak(message);
+            }
+        }
+
+        // Show typing indicator
+        function showTyping() {
+            document.getElementById('typingIndicator').classList.add('active');
+        }
+
+        // Hide typing indicator
+        function hideTyping() {
+            document.getElementById('typingIndicator').classList.remove('active');
+        }
+
+        // Send message to ZOEY
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Re-check connections before sending
+            await checkConnections();
+            
+            const endpoint = getBestEndpoint();
+            if (!endpoint) {
+                alert('No AI connection available! Please check your settings and ensure Ollama is running.');
+                return;
+            }
+            
+            addMessageToChat('user', message);
+            conversationHistory.push({ role: 'user', content: message, mode: currentMode });
+            saveHistory();
+            
+            input.value = '';
+            showTyping();
+            
+            try {
+                const response = await fetch(`${endpoint}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: config.modelName,
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'You are ZOEY, a helpful, friendly, and emotionally intelligent AI companion. You help users learn, grow, and achieve their goals. You remember past conversations and build a relationship with the user. Be warm, supportive, and encouraging.'
+                            },
+                            ...conversationHistory.map(m => ({
+                                role: m.role,
+                                content: m.content
+                            }))
+                        ],
+                        stream: false
+                    })
+                });
+
+                hideTyping();
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const zoeyResponse = data.message.content;
+                
+                addMessageToChat('zoey', zoeyResponse, currentMode);
+                conversationHistory.push({ 
+                    role: 'assistant', 
+                    content: zoeyResponse,
+                    mode: currentMode
+                });
+                saveHistory();
+                
+            } catch (error) {
+                hideTyping();
+                console.error('Error:', error);
+                
+                let errorMessage = `Failed to get response from ${currentMode} AI. `;
+                errorMessage += currentMode === 'cloud' ? 
+                    'Check your Oracle Cloud connection.' : 
+                    'Make sure Ollama is running with "ollama serve"';
+                
+                const chatContainer = document.getElementById('chatContainer');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error';
+                errorDiv.textContent = errorMessage;
+                chatContainer.appendChild(errorDiv);
+                
+                // Try to switch to other endpoint
+                if (currentMode === 'cloud' && localAvailable) {
+                    const retryDiv = document.createElement('div');
+                    retryDiv.className = 'info-banner';
+                    retryDiv.innerHTML = 'Trying local AI... <button onclick="sendMessage()" style="margin-left: 10px; padding: 4px 12px;">Retry</button>';
+                    chatContainer.appendChild(retryDiv);
+                    cloudAvailable = false;
+                    updateStatusDisplay();
+                } else if (currentMode === 'local' && cloudAvailable) {
+                    const retryDiv = document.createElement('div');
+                    retryDiv.className = 'info-banner';
+                    retryDiv.innerHTML = 'Trying cloud AI... <button onclick="sendMessage()" style="margin-left: 10px; padding: 4px 12px;">Retry</button>';
+                    chatContainer.appendChild(retryDiv);
+                    localAvailable = false;
+                    updateStatusDisplay();
+                }
+            }
+        }
+
+        // Settings dialog
+        function showSettings() {
+            document.getElementById('cloudUrl').value = config.cloudUrl;
+            document.getElementById('localUrl').value = config.localUrl;
+            document.getElementById('modelName').value = config.modelName;
+            document.getElementById('setupModal').classList.add('active');
+        }
+
+        // Initialize
+        window.onload = () => {
+            loadConfig();
+            loadHistory();
+            checkConnections();
+            
+            // Re-check connections every 30 seconds
+            setInterval(checkConnections, 30000);
+            
+            if (synthesis.onvoiceschanged !== undefined) {
+                synthesis.onvoiceschanged = () => {
+                    synthesis.getVoices();
+                };
+            }
+            
+            document.getElementById('userInput').focus();
+        };
+    </script>
+</body>
+</html>
